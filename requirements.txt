@@ -1,0 +1,5 @@
+pandas
+matplotlib
+vaderSentiment
+streamlit
+plotly
