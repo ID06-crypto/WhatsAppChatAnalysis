@@ -83,7 +83,12 @@ def graph_figure(chat: Chat, recipe: dict, colors: dict[str, str]):
         ts = chat.timeseries(recipe["metric"], recipe["freq"], people, start, end)
         if ts.empty:
             return None, ts
-        return charts.timeseries_figure(ts, recipe["metric"], recipe["freq"], colors, recipe.get("connect", True)), ts
+        smooth = recipe.get("smooth", 0)
+        if smooth > 1:  # centered rolling average over `smooth` buckets; empty buckets stay empty
+            ts = ts.rolling(smooth, center=True, min_periods=1).mean().where(ts.notna())
+        fig = charts.timeseries_figure(ts, recipe["metric"], recipe["freq"], colors,
+                                       recipe.get("connect", True), recipe.get("fill", True), smooth)
+        return fig, ts
     metrics = recipe["metrics"]
     agg = chat.aggregate(metrics, people, start, end, normalize=recipe["normalize"])
     return agg, agg
@@ -121,6 +126,7 @@ def load_recipe(r: dict) -> None:
     ss.people = r["people"]
     if r["kind"] == "timeseries":
         ss.metric, ss.freq, ss.connect = r["metric"], r["freq"], r.get("connect", True)
+        ss.fill, ss.smooth = r.get("fill", True), r.get("smooth", 0)
         ss.view = "Over time"
     else:
         ss.agg_metrics, ss.normalize = r["metrics"], r["normalize"]
@@ -212,14 +218,20 @@ def workspace(name: str) -> None:
     view = st.radio("View", VIEWS, horizontal=True, key="view", label_visibility="collapsed")
 
     if view == "Over time":
-        c1, c2, c3 = st.columns([3, 2, 2])
+        c1, c2 = st.columns([3, 2])
         metric = c1.selectbox("Metric", list(METRICS), format_func=lambda m: METRICS[m].label, key="metric")
         ss.setdefault("freq", "week")
         ss.setdefault("connect", True)
+        ss.setdefault("fill", True)
+        ss.setdefault("smooth", 0)
         freq = c2.selectbox("Group by", list(FREQS), key="freq")
-        connect = c3.toggle("Connect points", key="connect")
+        o1, o2, o3 = st.columns([2, 2, 4])
+        connect = o1.toggle("Show points", key="connect")
+        fill = o2.toggle("Fill under curves", key="fill")
+        smooth = o3.slider("Smoothing (buckets averaged)", 0, 30, key="smooth",
+                           help="0 = raw. Higher values average neighboring buckets for a rounder curve.")
         recipe = {"kind": "timeseries", "metric": metric, "freq": freq, "people": people,
-                  "window": window, "connect": connect}
+                  "window": window, "connect": connect, "fill": fill, "smooth": smooth}
         show_recipe(chat, recipe, colors, "live")
         save_box(project, recipe, "ts")
 

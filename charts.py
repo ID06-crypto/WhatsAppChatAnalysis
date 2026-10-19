@@ -22,18 +22,36 @@ def _base(fig: go.Figure, title: str) -> go.Figure:
     return fig
 
 
+def _rgba(hex_color: str, alpha: float) -> str:
+    h = hex_color.lstrip("#")
+    return f"rgba({int(h[0:2], 16)},{int(h[2:4], 16)},{int(h[4:6], 16)},{alpha})"
+
+
 def timeseries_figure(ts: pd.DataFrame, metric: str, freq: str, colors: dict[str, str],
-                      connect: bool = True) -> go.Figure:
+                      connect: bool = True, fill: bool = True, smooth: int = 0) -> go.Figure:
+    """Per-person curves. `fill` shades under each curve; `smooth` > 1 also rounds the line.
+
+    Smoothing itself (a rolling average) is done by the caller on `ts`; here it only
+    switches the line to a spline. Very large series use WebGL, which has no spline or
+    shading-friendly rendering, so they stay straight-edged.
+    """
+    big = ts.count().sum() > 20_000
+    Trace = go.Scattergl if big else go.Scatter
     fig = go.Figure()
     for person in ts.columns:
         s = ts[person].dropna()
-        fig.add_trace(go.Scattergl(
-            x=s.index, y=s.values, name=person, mode="lines+markers" if connect else "markers",
-            marker=dict(size=6, color=colors.get(person)),
-            line=dict(width=1, color=colors.get(person)), opacity=0.9,
+        color = colors.get(person)
+        line = dict(width=2, color=color)
+        if smooth > 1 and not big:
+            line.update(shape="spline", smoothing=1.0)
+        fig.add_trace(Trace(
+            x=s.index, y=s.values, name=person, mode="lines+markers" if connect else "lines",
+            marker=dict(size=5, color=color), line=line,
+            fill="tozeroy" if fill else None, fillcolor=_rgba(color, 0.18) if fill and color else None,
             hovertemplate=f"<b>{person}</b><br>%{{x}}<br>%{{y:.2f}}<extra></extra>",
         ))
-    fig = _base(fig, f"{METRICS[metric].label} per {freq}")
+    suffix = f" ({smooth}-period average)" if smooth > 1 else ""
+    fig = _base(fig, f"{METRICS[metric].label} per {freq}{suffix}")
     fig.update_xaxes(title="Time", rangeslider_visible=True)
     fig.update_yaxes(title=METRICS[metric].label, rangemode="tozero" if metric != "sentiment" else "normal")
     if metric == "sentiment":

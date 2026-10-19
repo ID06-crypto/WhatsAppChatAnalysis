@@ -19,7 +19,7 @@ Import a WhatsApp chat export (`.txt`) as a project, then build interactive grap
 
 **Views**
 
-- **Over time**: any metric, per person, as an interactive scatter. Group by minute, hour, day, week, month or year. Hover for values, drag to zoom, use the slider to move through time.
+- **Over time**: any metric, per person, as an interactive scatter. Group by minute, hour, day, week, month or year. Hover for values, drag to zoom, use the slider to move through time. Curves are shaded underneath so people are easy to tell apart, and a **Smoothing** slider averages neighboring buckets for a rounder, less jagged line (0 = raw data).
 - **Compare people**: grouped bars of the chosen metrics per person. Show them as a percentage of each person's texts (fair comparison) or as raw totals. Sentiment gets its own bar chart.
 - **Saved graphs**: save any graph by name and come back to it later. Saved graphs store their settings, not an image, and can be re-opened in the editor with **Edit**.
 
