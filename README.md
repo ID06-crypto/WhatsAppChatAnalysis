@@ -2,6 +2,8 @@
 
 A local web app for exploring an exported WhatsApp conversation: who texts more, who asks more questions, how the mood of the chat changes over time, and more. Everything runs on your own computer. Your chats are never uploaded anywhere.
 
+![The app showing texts per week for each person, with filled curves and the sidebar controls](Screenshot%202026-10-19%20at%208.03.30%E2%80%AFPM.png)
+
 ## What it does
 
 Import a WhatsApp chat export (`.txt`) as a project, then build interactive graphs from it.
